@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: fao_raw
+    description: "Raw FAO crop and livestock production data"
+    meta:
+      external_location: "data/raw/{name}.csv"
+    tables:
+      - name: Production_Crops_Livestock_E_All_Data_NOFLAG
+        description: "Main production data - wide format with year columns"
+      - name: Production_Crops_Livestock_E_AreaCodes
+        description: "Reference table mapping area codes to country names"
+      - name: Production_Crops_Livestock_E_ItemCodes
+        description: "Reference table mapping item codes to crop/livestock names"
+      - name: Production_Crops_Livestock_E_Elements
+        description: "Reference table mapping element codes to metric names"
+      - name: Production_Crops_Livestock_E_Flags
+        description: "Reference table mapping flags to descriptions"
