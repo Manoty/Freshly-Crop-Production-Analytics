@@ -2,7 +2,6 @@ with production as (
     select * from {{ ref('int_production_unpivoted') }}
 ),
 
--- only keep core production metrics
 filtered as (
     select
         area_code,
@@ -20,6 +19,7 @@ filtered as (
         'Area Harvested',
         'Animals Slaughtered'
     )
+    and value is not null  -- ← add this line
 )
 
 select * from filtered

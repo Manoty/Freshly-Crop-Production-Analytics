@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: fct_production
+    description: "Core fact table — production metrics by country, item and year"
+    columns:
+      - name: area_code
+        tests:
+          - not_null
+      - name: item_code
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: element_category
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'Production'
+                - 'Yield'
+                - 'Area Harvested'
+                - 'Animals Slaughtered'
+      - name: value
+        tests:
+          - not_null
+
+  - name: dim_areas
+    description: "Dimension table — all countries and regions"
+    columns:
+      - name: area_code
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_items
+    description: "Dimension table — all crops and livestock items"
+    columns:
+      - name: item_code
+        tests:
+          - not_null
+          - unique
