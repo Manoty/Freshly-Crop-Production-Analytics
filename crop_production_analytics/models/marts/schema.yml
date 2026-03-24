@@ -5,16 +5,16 @@ models:
     description: "Core fact table — production metrics by country, item and year"
     columns:
       - name: area_code
-        tests:
+        data_tests:
           - not_null
       - name: item_code
-        tests:
+        data_tests:
           - not_null
       - name: year
-        tests:
+        data_tests:
           - not_null
       - name: element_category
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
               values:
@@ -23,14 +23,15 @@ models:
                 - 'Area Harvested'
                 - 'Animals Slaughtered'
       - name: value
-        tests:
+        description: "Numeric measurement value — nulls excluded at model level"
+        data_tests:
           - not_null
 
   - name: dim_areas
     description: "Dimension table — all countries and regions"
     columns:
       - name: area_code
-        tests:
+        data_tests:
           - not_null
           - unique
 
@@ -38,6 +39,6 @@ models:
     description: "Dimension table — all crops and livestock items"
     columns:
       - name: item_code
-        tests:
+        data_tests:
           - not_null
           - unique
