@@ -188,7 +188,7 @@ PLOT_THEME = dict(
 @st.cache_data(ttl=300)
 def query(sql: str) -> pd.DataFrame:
     """Execute a SQL query against the DuckDB database and return a DataFrame."""
-    con = duckdb.connect(DB_PATH, read_only=True)
+    con = duckdb.connect(DB_PATH)
     df  = con.execute(sql).df()
     con.close()
     return df
