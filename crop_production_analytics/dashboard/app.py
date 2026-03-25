@@ -5,6 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 from datetime import datetime
+import os
+import subprocess
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -97,7 +99,97 @@ hr { border-color: #e0ebd8; }
 """, unsafe_allow_html=True)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-DB_PATH = "dev.duckdb"
+
+
+DB_PATH = "fao.duckdb"
+
+def build_database():
+    """Build DuckDB from raw CSVs if it doesn't exist."""
+    if os.path.exists(DB_PATH):
+        return
+
+    con = duckdb.connect(DB_PATH)
+
+    con.execute("""
+        create schema if not exists main;
+
+        create or replace table main.fct_production as
+        with source as (
+            select * from read_csv_auto(
+                'data/raw/Production_Crops_Livestock_E_All_Data_NOFLAG.csv',
+                header=true, ignore_errors=true
+            )
+        ),
+        unpivoted as (
+            select
+                "Area Code"    as area_code,
+                "Area"         as area_name,
+                "Item Code"    as item_code,
+                "Item"         as item_name,
+                "Element Code" as element_code,
+                "Element"      as element_name,
+                "Unit"         as unit,
+                year,
+                value
+            from source
+            unpivot (value for year in (
+                "Y1990","Y1995","Y2000","Y2005","Y2010",
+                "Y2015","Y2018","Y2019","Y2020","Y2021",
+                "Y2022","Y2023","Y2024"
+            ))
+        )
+        select
+            area_code,
+            area_name,
+            item_code,
+            item_name,
+            element_code,
+            element_name,
+            unit,
+            cast(replace(year, 'Y', '') as integer) as year,
+            case when value = 0 then null else cast(value as double) end as value,
+            case
+                when element_code in (5510,5513,5322,5323) then 'Production'
+                when element_code in (5412,5413,5422)      then 'Yield'
+                when element_code = 5312                   then 'Area Harvested'
+                when element_code in (5320,5321)           then 'Animals Slaughtered'
+                when element_code in (5111,5112,5114)      then 'Stocks'
+                when element_code in (5417,5424)           then 'Yield/Carcass Weight'
+                when element_code in (5319,5314)           then 'Producing Population'
+                when element_code = 5318                   then 'Milk Animals'
+                when element_code = 5313                   then 'Laying'
+                when element_code = 5423                   then 'Extraction Rate'
+                else 'Other'
+            end as element_category
+        from unpivoted
+        where value is not null
+          and element_code in (
+              5510,5513,5322,5323,
+              5412,5413,5422,
+              5312,
+              5320,5321
+          )
+    """)
+
+    con.execute("""
+        create or replace table main.dim_areas as
+        select distinct area_code, area_name
+        from main.fct_production
+        where area_code is not null
+        order by area_name
+    """)
+
+    con.execute("""
+        create or replace table main.dim_items as
+        select distinct item_code, item_name
+        from main.fct_production
+        where item_code is not null
+        order by item_name
+    """)
+
+    con.close()
+
+build_database()
 
 PLOT_THEME = dict(
     template="plotly_white",
