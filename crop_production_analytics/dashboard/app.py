@@ -101,18 +101,17 @@ hr { border-color: #e0ebd8; }
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 
-DB_PATH = "fao.duckdb"
+import os
+
+DB_PATH = "dev.duckdb"
 
 def build_database():
-    """Build DuckDB from raw CSVs if it doesn't exist."""
+    """Build dev.duckdb from raw CSVs if running on Streamlit Cloud."""
     if os.path.exists(DB_PATH):
         return
 
     con = duckdb.connect(DB_PATH)
-
     con.execute("""
-        create schema if not exists main;
-
         create or replace table main.fct_production as
         with source as (
             select * from read_csv_auto(
@@ -129,8 +128,7 @@ def build_database():
                 "Element Code" as element_code,
                 "Element"      as element_name,
                 "Unit"         as unit,
-                year,
-                value
+                year, value
             from source
             unpivot (value for year in (
                 "Y1990","Y1995","Y2000","Y2005","Y2010",
@@ -139,13 +137,8 @@ def build_database():
             ))
         )
         select
-            area_code,
-            area_name,
-            item_code,
-            item_name,
-            element_code,
-            element_name,
-            unit,
+            area_code, area_name, item_code, item_name,
+            element_code, element_name, unit,
             cast(replace(year, 'Y', '') as integer) as year,
             case when value = 0 then null else cast(value as double) end as value,
             case
@@ -163,28 +156,18 @@ def build_database():
             end as element_category
         from unpivoted
         where value is not null
-          and element_code in (
-              5510,5513,5322,5323,
-              5412,5413,5422,
-              5312,
-              5320,5321
-          )
     """)
 
     con.execute("""
         create or replace table main.dim_areas as
         select distinct area_code, area_name
-        from main.fct_production
-        where area_code is not null
-        order by area_name
+        from main.fct_production order by area_name
     """)
 
     con.execute("""
         create or replace table main.dim_items as
         select distinct item_code, item_name
-        from main.fct_production
-        where item_code is not null
-        order by item_name
+        from main.fct_production order by item_name
     """)
 
     con.close()
